@@ -4,12 +4,13 @@ from sklearn.preprocessing import OrdinalEncoder
 def download_data():
     # Загрузка данных из гита
     url = "https://raw.githubusercontent.com/mishka2134/lab1/main/energy_data.csv"
-    return pd.read_csv(url)
+    df = pd.read_csv(url)
+    df.to_csv("energy_raw.csv", index=False)
+    return df
 
-def clear_data(df):
+def clear_data(path2df):
     # Отчистка данных
-    df = df.copy().dropna()
-
+    df = pd.read_csv(path2df).dropna()
     cats = ['Building Type', 'Day of Week']
     nums = ['Square Footage', 'Number of Occupants', 'Appliances Used', 'Average Temperature']
 
@@ -22,5 +23,9 @@ def clear_data(df):
 
     # Кодирование категорий
     df[cats] = OrdinalEncoder().fit_transform(df[cats])
+    df.to_csv('energy_cleaned.csv', index=False)
+    return True
 
-    return df
+# Выполнение pipeline
+data = download_data()
+clear_data("energy_raw.csv")
