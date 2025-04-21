@@ -28,16 +28,10 @@ def eval_metrics(actual, pred):
     return rmse, mae, r2
 
 def load_cleaned_data():
-    """Загружает уже очищенные данные из файла"""
     return pd.read_csv('energy_cleaned.csv')
 
 if __name__ == "__main__":
-    # Загружаем уже очищенные данные (первый код сохраняет их в energy_cleaned.csv)
     clean_data = load_cleaned_data()
-    
-    # Проверяем, что целевая переменная есть в данных
-    if 'Energy Consumption' not in clean_data.columns:
-        raise ValueError("Target column 'Energy Consumption' not found in cleaned data")
     
     X, Y, scaler, power_trans = scale_data(clean_data)
 
