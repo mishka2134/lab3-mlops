@@ -73,8 +73,8 @@ if __name__ == "__main__":
 
         joblib.dump(best, "energy_model.pkl")
 
-    dfruns = mlflow.search_runs()
-    best_run = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]
-    path2model = best_run['artifact_uri'].replace("file://", "") + '/model'
-    print(f"Путь к лучшей модели: {path2model}")
+    #dfruns = mlflow.search_runs()
+    #best_run = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]
+    #path2model = best_run['artifact_uri'].replace("file://", "") + '/model'
+    #print(f"Путь к лучшей модели: {path2model}")
     
