@@ -9,13 +9,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from mlflow.models import infer_signature
 import joblib
 
-
 def scale_data(df, target='Energy Consumption'):
     x = df.drop(columns=[target])
     y = df[target]
     scaler = StandardScaler()
     power_trans = PowerTransformer()
-
     return (
         scaler.fit_transform(x),
         power_trans.fit_transform(y.values.reshape(-1, 1)),
@@ -23,17 +21,24 @@ def scale_data(df, target='Energy Consumption'):
         power_trans
     )
 
-
 def eval_metrics(actual, pred):
     rmse = np.sqrt(mean_squared_error(actual, pred))
     mae = mean_absolute_error(actual, pred)
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
+def load_cleaned_data():
+    """Загружает уже очищенные данные из файла"""
+    return pd.read_csv('energy_cleaned.csv')
 
 if __name__ == "__main__":
-    df = download_data()
-    clean_data = clear_data(df)
+    # Загружаем уже очищенные данные (первый код сохраняет их в energy_cleaned.csv)
+    clean_data = load_cleaned_data()
+    
+    # Проверяем, что целевая переменная есть в данных
+    if 'Energy Consumption' not in clean_data.columns:
+        raise ValueError("Target column 'Energy Consumption' not found in cleaned data")
+    
     X, Y, scaler, power_trans = scale_data(clean_data)
 
     X_train, X_val, y_train, y_val = train_test_split(
@@ -61,25 +66,20 @@ if __name__ == "__main__":
 
         (rmse, mae, r2) = eval_metrics(y_val_inv, y_price_pred)
 
-        mlflow.log_param("alpha", best.alpha)
-        mlflow.log_param("l1_ratio", best.l1_ratio)
-        mlflow.log_param("penalty", best.penalty)
-        mlflow.log_param("loss", best.loss)
-        mlflow.log_param("fit_intercept", best.fit_intercept)
+        mlflow.log_params(best.get_params())
+        mlflow.log_metrics({
+            "rmse": rmse,
+            "r2": r2,
+            "mae": mae
+        })
 
-        mlflow.log_metric("rmse", rmse)
-        mlflow.log_metric("r2", r2)
-        mlflow.log_metric("mae", mae)
-
-        predictions = best.predict(X_train)
-        signature = infer_signature(X_train, predictions)
+        signature = infer_signature(X_train, best.predict(X_train))
         mlflow.sklearn.log_model(best, "model", signature=signature)
 
-        with open("energy_model.pkl", "wb") as file:
-            joblib.dump(best, file)
+        joblib.dump(best, "energy_model.pkl")
 
     dfruns = mlflow.search_runs()
-    path2model = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]['artifact_uri'].replace("file://",
-                                                                                                   "") + '/model'
+    best_run = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]
+    path2model = best_run['artifact_uri'].replace("file://", "") + '/model'
     print(f"Путь к лучшей модели: {path2model}")
     
