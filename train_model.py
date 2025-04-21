@@ -32,10 +32,11 @@ def load_cleaned_data():
     return pd.read_csv('energy_cleaned.csv')
 
 if __name__ == "__main__":
-    clean_data = load_cleaned_data()
+    # Создаем папку mlruns если её нет
+    os.makedirs("mlruns", exist_ok=True)
     
+    clean_data = load_cleaned_data()
     X, Y, scaler, power_trans = scale_data(clean_data)
-
     X_train, X_val, y_train, y_val = train_test_split(
         X, Y, test_size=0.3, random_state=42
     )
@@ -49,6 +50,7 @@ if __name__ == "__main__":
     }
 
     mlflow.set_experiment("energy consumption model")
+    
     with mlflow.start_run():
         lr = SGDRegressor(random_state=42)
         clf = GridSearchCV(lr, params, cv=3, n_jobs=4)
@@ -70,11 +72,18 @@ if __name__ == "__main__":
 
         signature = infer_signature(X_train, best.predict(X_train))
         mlflow.sklearn.log_model(best, "model", signature=signature)
-
         joblib.dump(best, "energy_model.pkl")
 
-    dfruns = mlflow.search_runs()
-    best_run = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]
-    path2model = best_run['artifact_uri'].replace("file://", "") + '/model'
-    print(f"Путь к лучшей модели: {path2model}")
-    
+    # Безопасный поиск предыдущих запусков
+    try:
+        dfruns = mlflow.search_runs()
+        if not dfruns.empty:
+            best_run = dfruns.sort_values("metrics.r2", ascending=False).iloc[0]
+            path2model = best_run['artifact_uri'].replace("file://", "") + '/model'
+            print(f"Путь к лучшей модели: {path2model}")
+        else:
+            print("Нет сохранённых запусков, используется текущая модель")
+            path2model = "energy_model.pkl"
+    except Exception as e:
+        print(f"Ошибка при поиске прошлых запусков: {e}")
+        path2model = "energy_model.pkl"
