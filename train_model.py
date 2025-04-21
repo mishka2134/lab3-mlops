@@ -8,6 +8,9 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from mlflow.models import infer_signature
 import joblib
+import os
+os.makedirs("mlruns", exist_ok=True) 
+mlflow.set_experiment("energy consumption model")
 
 def scale_data(df, target='Energy Consumption'):
     x = df.drop(columns=[target])
