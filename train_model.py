@@ -87,3 +87,12 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Ошибка при поиске прошлых запусков: {e}")
         path2model = "energy_model.pkl"
+
+# Сохраняем метрики для DVC
+metrics = {
+    "rmse": rmse,
+    "mae": mae,
+    "r2": r2
+}
+with open("metrics.json", "w") as f:
+    json.dump(metrics, f)
